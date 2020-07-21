@@ -1,4 +1,4 @@
-import random, pygame, math
+import random, pygame, math, sys
 from Database import DatabaseAPI
 
 class Game:
@@ -6,7 +6,7 @@ class Game:
     def __init__(self):
         '''Constructor'''
         pygame.init()
-
+        pygame.font.init()
         self.RADIUS = 20
         
         self.database = DatabaseAPI()
@@ -14,19 +14,19 @@ class Game:
         self.guessedWord = []
         self.images = self.inputImage()
 
-    def quitProgram(self):
+    def quitProgram(self, event):
         '''Check to quit the program'''
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
+        # for event in pygame.event.get():
+        event = pygame.event.wait()
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            quit()
     
     def drawTittle(self, window):
         '''Draw the tittle on the screen'''
         TITTLEFONT = pygame.font.SysFont('comicsans', 60)
         text = TITTLEFONT.render('HANG MAN', True, (0, 0, 0))
         window.blit(text, (200, 50))
-
 
     def inputImage(self):
         '''Input images into an images list'''
@@ -60,6 +60,7 @@ class Game:
     
     def draw(self, window, secretWord, guessed, i):
         '''Draw all the buttons, header and also show the secret word'''
+        
         LETTERFONT = pygame.font.SysFont('comicsans', 30)
         window.fill((255, 255, 255))
         self.drawTittle(window)
@@ -75,42 +76,40 @@ class Game:
 
     def showSecretWord(self, window, secretWord, guessed):
         '''Display secret word in '*' format'''
+        
         SECRETWORDFONT = pygame.font.SysFont('comicsans', 40)
         showedWord = ""
         for letter in secretWord:
             if letter in guessed:
                 showedWord += letter + " "
             else:
-                showedWord += "* "
+                showedWord += "_ "
         text = SECRETWORDFONT.render(showedWord, True, (0, 0, 0))
         window.blit(text, (400, 200))
 
     def operation(self, window, choice):
         '''Main operation'''
-        secretWord, guessed = self.callDatabase(choice), self.guessedWord
-        FPS, i = 60, 0
+        secretWord, guessed, letters = self.callDatabase(choice), self.guessedWord, self.letters
+        FPS, i = 80, 0
         clock = pygame.time.Clock()
         run = True
         while run:
             clock.tick(FPS)
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    run = False
-                    pygame.quit()
+                self.quitProgram(event)
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouseX, mouseY = pygame.mouse.get_pos()
-                    for letter in self.letters:
+                    print((mouseX, mouseY))
+                    for letter in letters:
                         x, y, ltr, visible = letter
                         if visible:
                             distance = math.sqrt((mouseX - x)**2 + (mouseY - y)**2)
                             if distance < self.RADIUS:
                                 letter[3] = False
                                 guessed.append(ltr)
-                                print(guessed)
                                 if ltr not in secretWord:
-                                    i += 1
-                                   
-            self.draw(window, secretWord, guessed, i)                 
+                                    i += 1  #show the stage of the game
+            self.draw(window, secretWord, guessed, i)       #put here so players can see how the word or if they are completely hung             
             
             won = True
             for letter in secretWord:
@@ -118,24 +117,52 @@ class Game:
                     won = False
                     break
             if won:
-                self.message(window, 'YOU WON!')
+                self.postGameWindow(window, 'YOU WON!')
                 break
             if i == 6:
-                self.message(window, 'YOU DID NOT GUESS THE CORRECT WORD!')
+                self.postGameWindow(window, 'YOU DID NOT GUESS THE CORRECT WORD!')
                 break
-
-    def message(self, window, message):
-        WIDTH, HEIGHT = 800, 500
-        pygame.time.delay(1000)
-        window.fill((255, 255, 255))
+    
+ 
+    def message(self, window, message, WIDTH, HEIGHT):
+        '''Show the message after guessing'''
+        pygame.font.init()
         MESSAGEFONT = pygame.font.SysFont('comicsan', 40)
+        text = MESSAGEFONT.render(message, True, (0, 0, 0))
+        window.blit(text, (WIDTH/2 - text.get_width()/2, HEIGHT/2 - text.get_height()/2))
+        pygame.display.update()
+
+    def returnMainMenuButton(self, window):
+        '''Returning to main menu function'''
+        run = True
+        while run :
+           for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                   pygame.quit()
+                   sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouseX, mouseY = pygame.mouse.get_pos()
+                    print((mouseX, mouseY))
+                    if 800 > mouseX > 800 - 104 and 79 > mouseY > 0: 
+                        return False 
+    
+    def loadBackButton(self, window):
+        '''Load the back button'''
+        backbuttonImage = pygame.image.load('backbutton.png')
+        window.blit(backbuttonImage, (800 - 104, 0))
+
+    def postGameWindow(self, window, message):
+        '''Show the message after the game'''
+        WIDTH, HEIGHT = 800, 500
+        window.fill((255, 255, 255))
         run = True
         while run:
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    run = False
-            text = MESSAGEFONT.render(message, True, (0, 0, 0))
-            window.blit(text, (WIDTH/2 - text.get_width()/2, HEIGHT/2 - text.get_height()/2))
-            pygame.display.update()
+                self.quitProgram(event)
+                self.loadBackButton(window)
+                self.message(window, message, WIDTH, HEIGHT)
+                run = self.returnMainMenuButton(window)
+                
+                
         
-        
+    

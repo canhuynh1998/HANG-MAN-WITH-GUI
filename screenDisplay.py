@@ -6,7 +6,7 @@ class screenDisplay:
     def __init__(self):
         '''constructor'''
         pygame.init()
-
+        pygame.font.init()
         '''size for button'''
         self.X, self.Y = 400 , 150
         self.width, self.height = 100 , 60
@@ -17,7 +17,7 @@ class screenDisplay:
         '''The welcoming window. It also asks for selection of catergories'''
         self.quitProgram()      #check when to stop the program
         
-        pygame.time.delay(100)
+        pygame.time.delay(10)
         window.fill((255, 255, 255))
 
         '''welcome image'''
