@@ -1,11 +1,11 @@
-import random, pygame, math, sys
+import random, pygame, math, sys, pyttsx3
 from Database import DatabaseAPI
-
+pygame.init()
 class Game:
 
     def __init__(self):
         '''Constructor'''
-        pygame.init()
+       
         pygame.font.init()
         self.RADIUS = 20
         
@@ -20,14 +20,18 @@ class Game:
         event = pygame.event.wait()
         if event.type == pygame.QUIT:
             pygame.quit()
-            quit()
+            sys.exit()
     
     def drawTittle(self, window):
         '''Draw the tittle on the screen'''
         TITTLEFONT = pygame.font.SysFont('comicsans', 60)
         text = TITTLEFONT.render('HANG MAN', True, (0, 0, 0))
         window.blit(text, (200, 50))
-
+    
+    def backgroundImage(self, window):
+        background = pygame.image.load('background.png')
+        window.blit(background,(0,0))
+    
     def inputImage(self):
         '''Input images into an images list'''
         images = []
@@ -60,9 +64,10 @@ class Game:
     
     def draw(self, window, secretWord, guessed, i):
         '''Draw all the buttons, header and also show the secret word'''
-        
+       
         LETTERFONT = pygame.font.SysFont('comicsans', 30)
         window.fill((255, 255, 255))
+        self.backgroundImage(window)
         self.drawTittle(window)
         self.showSecretWord(window, secretWord, guessed)
         for letter in self.letters:
@@ -76,7 +81,6 @@ class Game:
 
     def showSecretWord(self, window, secretWord, guessed):
         '''Display secret word in '*' format'''
-        
         SECRETWORDFONT = pygame.font.SysFont('comicsans', 40)
         showedWord = ""
         for letter in secretWord:
@@ -104,7 +108,7 @@ class Game:
                         x, y, ltr, visible = letter
                         if visible:
                             distance = math.sqrt((mouseX - x)**2 + (mouseY - y)**2)
-                            if distance < self.RADIUS:
+                            if distance <= self.RADIUS:
                                 letter[3] = False
                                 guessed.append(ltr)
                                 if ltr not in secretWord:
@@ -117,12 +121,14 @@ class Game:
                     won = False
                     break
             if won:
-                self.postGameWindow(window, 'YOU WON!')
+                self.guessedWord.clear()
+                
+                self.postGameWindow(window, 'YOU WON!', secretWord, letters)
                 break
             if i == 6:
-                self.postGameWindow(window, 'YOU DID NOT GUESS THE CORRECT WORD!')
+                self.guessedWord.clear()
+                self.postGameWindow(window, 'YOU DID NOT GUESS THE CORRECT WORD!', secretWord, letters)
                 break
-    
  
     def message(self, window, message, WIDTH, HEIGHT):
         '''Show the message after guessing'''
@@ -136,14 +142,12 @@ class Game:
         '''Returning to main menu function'''
         run = True
         while run :
-           for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                   pygame.quit()
-                   sys.exit()
+            for event in pygame.event.get():     #check quit the program or return to the main menu
+                self.quitProgram(event)
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouseX, mouseY = pygame.mouse.get_pos()
                     print((mouseX, mouseY))
-                    if 800 > mouseX > 800 - 104 and 79 > mouseY > 0: 
+                    if 800 >= mouseX >= 800 - 104 and 79 >= mouseY > 0: 
                         return False 
     
     def loadBackButton(self, window):
@@ -151,18 +155,28 @@ class Game:
         backbuttonImage = pygame.image.load('backbutton.png')
         window.blit(backbuttonImage, (800 - 104, 0))
 
-    def postGameWindow(self, window, message):
+    def postGameWindow(self, window, message, secretWord, letters):
         '''Show the message after the game'''
         WIDTH, HEIGHT = 800, 500
+        self.guessedWord.clear()
+        for letter in letters:
+            x, y, ltr, visible = letter
+            if not visible:
+                letter[3] = True
+            else:
+                continue
         window.fill((255, 255, 255))
+        self.sayoutloudTheWord(secretWord)
         run = True
-        while run:
+        while run:      #This function doesn't need the quitProgram method because it has a counter to check when to stop the loop
+            self.backgroundImage(window)
             for event in pygame.event.get():
-                self.quitProgram(event)
                 self.loadBackButton(window)
                 self.message(window, message, WIDTH, HEIGHT)
                 run = self.returnMainMenuButton(window)
                 
-                
-        
-    
+    def sayoutloudTheWord(self, secretWord):  
+        '''Say the word out for players'''  
+        engine = pyttsx3.init()
+        engine.say('The secret word is '+secretWord)
+        engine.runAndWait()
